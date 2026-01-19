@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI API Security Monitor</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    label { display: block; margin-top: 10px; }
+    input { padding: 6px; width: 260px; }
+    button { margin-top: 15px; padding: 8px 16px; }
+    .result { margin-top: 20px; padding: 10px; border-radius: 4px; }
+    .Normal { background-color: #e0f7e9; color: #075e1a; }
+    .Suspicious { background-color: #ffebee; color: #b71c1c; }
+    ul { margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <h1>AI API Security Monitor</h1>
+  <p>Simulate a request to an ML/AI API and see if it is anomalous.</p>
+
+  <label>Timestamp (ISO):
+    <input id="timestamp" value="2026-01-01T10:00:00Z" />
+  </label>
+
+  <label>IP:
+    <input id="ip" value="203.0.113.50" />
+  </label>
+
+  <label>Endpoint:
+    <input id="endpoint" value="/predict" />
+  </label>
+
+  <label>Method:
+    <input id="method" value="POST" />
+  </label>
+
+  <label>Bytes in:
+    <input id="bytes_in" type="number" value="5000" />
+  </label>
+
+  <label>Bytes out:
+    <input id="bytes_out" type="number" value="512" />
+  </label>
+
+  <label>Status code:
+    <input id="status_code" type="number" value="200" />
+  </label>
+
+  <label>Latency (ms):
+    <input id="latency_ms" type="number" value="900" />
+  </label>
+
+  <button onclick="sendRequest()">Analyze Request</button>
+
+  <div id="result" class="result" style="display:none;"></div>
+
+  <script>
+    async function sendRequest() {
+      const payload = {
+        timestamp: document.getElementById("timestamp").value,
+        ip: document.getElementById("ip").value,
+        endpoint: document.getElementById("endpoint").value,
+        method: document.getElementById("method").value,
+        bytes_in: parseInt(document.getElementById("bytes_in").value),
+        bytes_out: parseInt(document.getElementById("bytes_out").value),
+        status_code: parseInt(document.getElementById("status_code").value),
+        latency_ms: parseInt(document.getElementById("latency_ms").value),
+      };
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/monitor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        const resultDiv = document.getElementById("result");
+        resultDiv.style.display = "block";
+
+        const label = data.summary.label;
+        const risk = data.summary.risk_level;
+        const score = data.summary.anomaly_score.toFixed(4);
+
+        resultDiv.className = "result " + label;
+
+        let html =
+          `<strong>Label:</strong> ${label}<br/>` +
+          `<strong>Risk level:</strong> ${risk}<br/>` +
+          `<strong>Anomaly score:</strong> ${score}<br/>` +
+          `<strong>Explanation:</strong><ul>`;
+
+        for (const e of data.explanation) {
+          html += `<li>${e}</li>`;
+        }
+        html += "</ul>";
+
+        resultDiv.innerHTML = html;
+      } catch (err) {
+        alert("Error contacting API: " + err);
+      }
+    }
+  </script>
+</body>
+</html>
